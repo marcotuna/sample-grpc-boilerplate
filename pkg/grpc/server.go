@@ -24,6 +24,7 @@ func NewServer(connParams *Connection) (*Server, error) {
 
 	serverConn := Server{
 		IsConnected: false,
+		Connected:   make(chan int),
 	}
 
 	// Initialize GRPC Server
@@ -49,17 +50,20 @@ func (s *Server) StartServer(connParams *Connection) error {
 
 	srv := grpc.NewServer()
 
-	/*
-		log.Infof("gRPC Server: Serving at %s", fmt.Sprintf("%s:%d", connParams.IP, connParams.Port))
-		if err := srv.Serve(ln); err != nil {
-			return err
-		}
-	*/
+	// Start serving requests
 	go srv.Serve(ln)
-
 	s.GRPCConn = srv
 
-	s.Connected <- StatusReady
+	// Notify connection ready
+	go func() {
+		s.Connected <- StatusReady
+	}()
 
 	return nil
+}
+
+// ShutdownServer closes the running GRPC Server
+func (s *Server) ShutdownServer() {
+	// Shutdown GRPC
+	s.GRPCConn.GracefulStop()
 }

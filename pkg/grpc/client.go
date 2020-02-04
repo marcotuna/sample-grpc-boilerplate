@@ -12,7 +12,7 @@ import (
 type Client struct {
 	// Is GRPC connected?
 	IsConnected bool
-	Connected   chan int
+	Connected   chan connectivity.State
 	// GRPC connection
 	GRPCConn *grpc.ClientConn
 }
@@ -22,6 +22,7 @@ func NewClient(connParams *Connection) (*Client, error) {
 
 	clientConn := Client{
 		IsConnected: false,
+		Connected:   make(chan connectivity.State),
 	}
 
 	// Initialize GRPC Client
@@ -54,7 +55,9 @@ func (c *Client) StartClient(connParams *Connection) error {
 	c.IsConnected = true
 
 	// Update channel status to true
-	c.Connected <- StatusReady
+	go func() {
+		c.Connected <- StatusReady
+	}()
 
 	// Start GRPC health checking
 	go c.grpcHealth(cc)
@@ -72,33 +75,31 @@ func (c *Client) grpcHealth(cc *grpc.ClientConn) {
 
 	// Run ticker immediatly
 	for ; true; <-ticker.C {
+		// Connection is unavailable
+		// Emit event with status false
+
+		//if !c.IsConnected && cc.GetState() == connectivity.Ready {
+		//	c.IsConnected = true
+		//} else {
+		//	c.IsConnected = false
+		//}
+
 		switch cc.GetState() {
-		case connectivity.Connecting:
-
+		case connectivity.Connecting, connectivity.Idle, connectivity.Shutdown, connectivity.TransientFailure:
+			// Connection is unavailable
+			// Emit event with status false
 			if c.IsConnected {
-				// Connection is unavailable
-				// Emit event with status false
-				c.Connected <- StatusConnecting
-			}
-
-			// Set status to false
-			c.IsConnected = false
-		case connectivity.Idle, connectivity.TransientFailure, connectivity.Shutdown:
-
-			if c.IsConnected {
-				// Connection is unavailable
-				// Emit event with status false
-				c.Connected <- StatusShutdown
+				c.Connected <- cc.GetState()
 			}
 
 			// Set status to false
 			c.IsConnected = false
 		case connectivity.Ready:
 
+			// Connection is ready
+			// Emit event with status true
 			if !c.IsConnected {
-				// Connection is ready
-				// Emit event with status true
-				c.Connected <- StatusReady
+				c.Connected <- cc.GetState()
 			}
 
 			// Set status to true
