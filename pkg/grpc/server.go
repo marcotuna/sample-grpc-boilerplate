@@ -28,7 +28,7 @@ func NewServer(connParams *Connection) (*Server, error) {
 	}
 
 	// Initialize GRPC Server
-	err := serverConn.StartServer(connParams)
+	err := serverConn.Start(connParams)
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +36,8 @@ func NewServer(connParams *Connection) (*Server, error) {
 	return &serverConn, nil
 }
 
-// StartServer starts GRPC server
-func (s *Server) StartServer(connParams *Connection) error {
+// Start starts GRPC server
+func (s *Server) Start(connParams *Connection) error {
 
 	// Start GRPC server
 	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", connParams.IP, connParams.Port))
@@ -62,8 +62,8 @@ func (s *Server) StartServer(connParams *Connection) error {
 	return nil
 }
 
-// ShutdownServer closes the running GRPC Server
-func (s *Server) ShutdownServer() {
+// Shutdown closes the running GRPC Server
+func (s *Server) Shutdown() {
 	// Shutdown GRPC
 	s.GRPCConn.GracefulStop()
 }

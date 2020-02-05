@@ -41,7 +41,6 @@ func (c *Client) StartClient(connParams *Connection) error {
 		fmt.Sprintf("%s:%d", connParams.IP, connParams.Port),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		//grpc.WithTimeout(2*time.Second),
 	)
 
 	if err != nil {
@@ -63,8 +62,11 @@ func (c *Client) StartClient(connParams *Connection) error {
 	go c.grpcHealth(cc)
 
 	return nil
+}
 
-	//defer cc.Close()
+// Shutdown closes client connection
+func (c *Client) Shutdown() {
+	c.GRPCConn.Close()
 }
 
 func (c *Client) grpcHealth(cc *grpc.ClientConn) {
@@ -75,15 +77,6 @@ func (c *Client) grpcHealth(cc *grpc.ClientConn) {
 
 	// Run ticker immediatly
 	for ; true; <-ticker.C {
-		// Connection is unavailable
-		// Emit event with status false
-
-		//if !c.IsConnected && cc.GetState() == connectivity.Ready {
-		//	c.IsConnected = true
-		//} else {
-		//	c.IsConnected = false
-		//}
-
 		switch cc.GetState() {
 		case connectivity.Connecting, connectivity.Idle, connectivity.Shutdown, connectivity.TransientFailure:
 			// Connection is unavailable

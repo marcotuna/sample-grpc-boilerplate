@@ -22,6 +22,8 @@ func main() {
 		Port: grpcConnParams.Port,
 	})
 
+	defer grpcServer.Shutdown()
+
 	if err != nil {
 		log.Errorf("err: %v\n", err.Error())
 		return
@@ -32,13 +34,13 @@ func main() {
 		select {
 		case grpcStatus := <-grpcServer.Connected:
 			switch grpcStatus {
-			case 1:
+			case grpc.StatusConnecting:
 				fmt.Printf("gRPC Server: Connecting\n")
-			case 2:
+			case grpc.StatusReady:
 				fmt.Printf("gRPC Server: Serving at %s\n", fmt.Sprintf("%s:%d", grpcConnParams.IP, grpcConnParams.Port))
-			case 5:
+			case grpc.StatusShutdown:
 				fmt.Printf("gRPC Server: Shutting down...\n")
-			case 3, 4, 6:
+			case grpc.StatusTransientFailure, grpc.StatusIdle, grpc.StatusInvalid:
 				fmt.Printf("gRPC Server: Error\n")
 			}
 		}
