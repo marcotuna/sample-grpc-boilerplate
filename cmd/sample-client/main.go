@@ -9,7 +9,10 @@ import (
 
 func main() {
 
-	log.Info("GRPC Client")
+	logger := log.New()
+	logger.SetFormatter(&log.TextFormatter{})
+
+	logger.Info("gRPC Client")
 
 	grpcConnParams := &grpc.Connection{
 		IP:   "127.0.0.1",
@@ -25,7 +28,7 @@ func main() {
 	defer grpcClient.Shutdown()
 
 	if err != nil {
-		log.Errorf("err: %v\n", err.Error())
+		logger.Errorf("err: %v\n", err.Error())
 		return
 	}
 
@@ -35,13 +38,13 @@ func main() {
 		case grpcStatus := <-grpcClient.Connected:
 			switch grpcStatus {
 			case grpc.StatusConnecting:
-				fmt.Printf("gRPC Client: Connecting\n")
+				logger.Info("gRPC Client: Connecting")
 			case grpc.StatusReady:
-				fmt.Printf("gRPC Client: Serving at %s\n", fmt.Sprintf("%s:%d", grpcConnParams.IP, grpcConnParams.Port))
+				logger.Infof("gRPC Client: Connected to %s\n", fmt.Sprintf("%s:%d", grpcConnParams.IP, grpcConnParams.Port))
 			case grpc.StatusShutdown:
-				fmt.Printf("gRPC Client: Shutting down...\n")
+				logger.Info("gRPC Client: Shutting down...")
 			case grpc.StatusTransientFailure, grpc.StatusIdle, grpc.StatusInvalid:
-				fmt.Printf("gRPC Client: Error\n")
+				logger.Error("gRPC Client: Error")
 			}
 
 		}
